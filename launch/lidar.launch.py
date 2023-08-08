@@ -10,7 +10,7 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
 
     pkg_share = launch_ros.substitutions.FindPackageShare(package='lidar_scan').find('lidar_scan')
-    default_rviz_config_path = os.path.join(pkg_share, 'rviz/wamv_config.rviz')
+    #default_rviz_config_path = os.path.join(pkg_share, 'rviz/wamv_config.rviz')
     
     lidar_pub = Node(
             package='lidar_scan',
@@ -48,17 +48,12 @@ def generate_launch_description():
                 }
             ],
             remappings=[
+                #('/cloud_in', '/rgb_pointcloud'),
                 ('/cloud_in', '/lidar_0/m1600/pcl2'),  # Replace with your PointCloud2 topic
                 ('/scan', '/scan'),        # Replace with the desired LaserScan topic
             ],
         )
-    rviz_node = launch_ros.actions.Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        arguments=['-d', LaunchConfiguration('rvizconfig')],
-    )
+ 
     
     colorMappingNode = Node(
             package='lidar_scan',
@@ -78,14 +73,17 @@ def generate_launch_description():
             executable='static_transform_publisher',
             arguments = ['--x', '0', '--y', '0', '--z', '1', '--yaw', '0', '--pitch', '0', '--roll', '0', '--frame-id', 'map', '--child-frame-id', 'odom']
     )
+
+
     return LaunchDescription([
         #launch_ros.actions.SetParameter(name='use_sim_time', value=True), # attempt to solve TF_OLD_DATA error
-        launch.actions.DeclareLaunchArgument(name='rvizconfig', default_value=default_rviz_config_path,
-                                            description='Absolute path to rviz config file'),
+
+        launch.actions.DeclareLaunchArgument('map_topic', default_value='/map',
+                                            description='Occupancy grid map topic'),
         lidar0_frame,
         base_footprint,
         pcl2_ls,
-        #colorMappingNode,
+        colorMappingNode
         #fixed_math_node
         #rviz_node
         #rviz_node
