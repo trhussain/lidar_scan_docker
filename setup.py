@@ -12,6 +12,9 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name,['ekf_node.yaml']),
+        ('share/' + package_name,['wamv.urdf']),
+        ('share/' + package_name,['tahseen.rviz']),
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
     ],
     install_requires=['setuptools'],
@@ -30,3 +33,5 @@ setup(
         ],
     },
 )
+
+# Figure out how to include 'share/config and share/description' so you can move ekf_node and wamv.urdf into respective files 

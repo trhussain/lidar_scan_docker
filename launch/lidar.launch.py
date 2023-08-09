@@ -10,7 +10,8 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
 
     pkg_share = launch_ros.substitutions.FindPackageShare(package='lidar_scan').find('lidar_scan')
-    #default_rviz_config_path = os.path.join(pkg_share, 'rviz/wamv_config.rviz')
+    default_model_path = os.path.join(pkg_share, 'wamv.urdf')
+    default_rviz_config_path = os.path.join(pkg_share, 'tahseen.rviz')
     
     lidar_pub = Node(
             package='lidar_scan',
@@ -19,7 +20,7 @@ def generate_launch_description():
     lidar0_frame=Node(
             package='tf2_ros',
             executable='static_transform_publisher',
-            arguments = ['--x', '0.25', '--y', '0', '--z', '0', '--yaw', '0', '--pitch', '0', '--roll', '0', '--frame-id', 'base_link', '--child-frame-id', 'lidar_0']
+            arguments = ['--x', '0.1', '--y', '0', '--z', '0', '--yaw', '0', '--pitch', '0', '--roll', '0', '--frame-id', 'base_link', '--child-frame-id', 'lidar_0']
     )
     test_frame=Node( 
             package='tf2_ros',
@@ -34,7 +35,7 @@ def generate_launch_description():
     base_footprint=Node(
             package='tf2_ros',
             executable='static_transform_publisher',
-            arguments = ['--x', '0', '--y', '0', '--z', '2', '--yaw', '0', '--pitch', '0', '--roll', '0', '--frame-id', 'lidar_0', '--child-frame-id', 'base_footprint']
+            arguments = ['--x', '0', '--y', '0', '--z', '0.1', '--yaw', '0', '--pitch', '0', '--roll', '0', '--frame-id', 'lidar_0', '--child-frame-id', 'base_footprint']
     )
     pcl2_ls=Node(
             package='pointcloud_to_laserscan',
@@ -73,19 +74,60 @@ def generate_launch_description():
             executable='static_transform_publisher',
             arguments = ['--x', '0', '--y', '0', '--z', '1', '--yaw', '0', '--pitch', '0', '--roll', '0', '--frame-id', 'map', '--child-frame-id', 'odom']
     )
-
-
+    robot_localization_node = launch_ros.actions.Node(
+       package='robot_localization',
+       executable='ekf_node',
+       name='ekf_filter_node',
+       output='screen',
+       parameters=[os.path.join(pkg_share, 'ekf.yaml'), {'use_sim_time': LaunchConfiguration('use_sim_time')}]
+    )
+    robot_state_publisher_node = launch_ros.actions.Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        parameters=[{'robot_description': Command(['xacro ', LaunchConfiguration('model')])}]
+    )
+    joint_state_publisher_node = launch_ros.actions.Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
+    )
+    spawn_entity = launch_ros.actions.Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        arguments=['-entity', 'sam_bot', '-topic', 'robot_description'],
+        output='screen'
+    )
+    rviz_node = launch_ros.actions.Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', LaunchConfiguration('rvizconfig')],
+    )
     return LaunchDescription([
         #launch_ros.actions.SetParameter(name='use_sim_time', value=True), # attempt to solve TF_OLD_DATA error
 
         launch.actions.DeclareLaunchArgument('map_topic', default_value='/map',
                                             description='Occupancy grid map topic'),
+        launch.actions.DeclareLaunchArgument(name='rvizconfig', default_value=default_rviz_config_path,
+                                            description='Absolute path to rviz config file'),
+        launch.actions.DeclareLaunchArgument(name='use_sim_time', default_value='True',
+                                            description='Flag to enable use_sim_time'),
+        launch.actions.DeclareLaunchArgument(name='model', default_value=default_model_path,
+                                            description='Absolute path to robot urdf file'),
+
+        #launch.actions.ExecuteProcess(cmd=['gazebo', '--verbose', '-s', 'libgazebo_ros_init.so', '-s', 'libgazebo_ros_factory.so'], output='screen'),
+
         lidar0_frame,
-        base_footprint,
+        joint_state_publisher_node,
+        robot_state_publisher_node,
+        #spawn_entity,
+        robot_localization_node,
         pcl2_ls,
-        colorMappingNode
+        #map_node,
+        #colorMappingNode
         #fixed_math_node
-        #rviz_node
+        rviz_node
         #rviz_node
         #map_ned,
         #test_frame,

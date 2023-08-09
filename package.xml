@@ -24,6 +24,7 @@
   <exec_depend>rviz</exec_depend>
   <exec_depend>xacro</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>robot_localization</exec_depend>
   <depend>im</depend>
   <depend>cv2</depend>
   <depend>sensor_msgs_py</depend>
